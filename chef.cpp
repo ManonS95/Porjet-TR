@@ -1,11 +1,9 @@
-#include "ir.hpp"
 #include "servo.hpp"
 #include "flux_cam.hpp"
 #include "motor_cc.hpp"
 #include <pthread.h>
 #include <semaphore.h>
 
-#define IR 1
 
 #define SERVO1 22 // 6
 #define SERVO2 0 // 17
@@ -13,34 +11,49 @@
 static pthread_cond_t c = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 sem_t semaphore;
-char order = 'l';
 double angle_target;
 double angle, offset, compteur;
 
+void viderBuffer()
+{
+    int c = 0;
+    while (c != '\n' && c != EOF)
+    {
+        c = getchar();
+    }
+}
 
 void* start_motor(void *arg)
 {
     char init;
+    char order;
     for(int i = 0; i < 2; i++)
         sem_wait(&semaphore);
     
-    while ((order != 's') || (abs(angle) < 200))
+    do
     {
-        do
-        {
-            printf("Orientez l'encodeur à sa postion initiale. Are you ready? (o or n)\n");
-            scanf("%c", &init);
-            if (init == 'o')
-                offset = compteur;
-        } while (init != 'o');
-
         printf("What do you want to do?\n l -> Left\n r -> Right\n b -> Break\n s -> Stop!\n");
-        sleep(1);
         scanf("%c", &order);
+        
+        if ((order != 's') && (order != 'b'))
+        {
+            scan('b'); // Pour pouvoir manipuler le moteur sans résistance
+            do
+            {
+                viderBuffer();
+                printf("Orientez l'encodeur à sa postion initiale. Are you ready? (o or n)\n");
+                scanf("%c", &init);
+                
+                if (init == 'o')
+                    offset = compteur;
+            } while (init != 'o');
+        }
+        viderBuffer();
 
         // Lance la commande
         scan(order);
-    }
+    } while ((order != 's'));// || (abs(angle) < 200));
+    
     scan('s');
     return 0;
 }
@@ -48,7 +61,7 @@ void* start_motor(void *arg)
 
 void* IR_listening(void *arg)
 {
-    int fd = wiringPiI2CSetup (0x04);
+    int fd = wiringPiI2CSetup(0x04);
     int channel = 1;
     double voltage;
 
@@ -56,7 +69,7 @@ void* IR_listening(void *arg)
 
     while(1)
     {
-        voltage = wiringPiI2CReadReg16 (fd, 0x20 + channel) / 1000.0;
+        voltage = wiringPiI2CReadReg16(fd, 0x20 + channel) / 1000.0;
         *(double*) arg =  27.86 * pow(voltage, -1.15);
         //printf("Distance = %lf\n", distance);
     }
@@ -81,9 +94,10 @@ void* encodeur(void *arg)
     
     printf("\nOpening Driver\n");
     fd = open("/dev/encodeur", O_RDONLY);
-    if(fd < 0) {
-            printf("Cannot open device file...\n");
-            return 0;
+    if(fd < 0) 
+    {
+        printf("Cannot open device file...\n");
+        return 0;
     }
 
     read(fd, buf, 20);

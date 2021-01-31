@@ -1,0 +1,1 @@
+cmd_/home/pi/Maquette/driver/driver.ko := ld -r  -EL  --build-id  -T ./scripts/module-common.lds -T ./arch/arm/kernel/module.lds -o /home/pi/Maquette/driver/driver.ko /home/pi/Maquette/driver/driver.o /home/pi/Maquette/driver/driver.mod.o;  true

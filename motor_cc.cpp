@@ -15,20 +15,19 @@ void scan(char choice)
     int cmd = (speed << 8) | (pin_ & 0xFF);
 
 
-
-        switch(choice){
-        case 'r':
-            wiringPiI2CWriteReg16(fd, CMD_CW, cmd);
-            break;
-        case 'l':
-            wiringPiI2CWriteReg16(fd, CMD_CCW, cmd);
-            break;
-        case 'b':
-            wiringPiI2CWriteReg16(fd, CMD_BRAKE, 0x00);
-            break;
-        case 's':
-            wiringPiI2CWriteReg16(fd, CMD_STOP, 0x00);
-            break;
-        }
+    switch(choice){
+    case 'r':
+        wiringPiI2CWriteReg16(fd, CMD_CW, cmd);
+        break;
+    case 'l':
+        wiringPiI2CWriteReg16(fd, CMD_CCW, cmd);
+        break;
+    case 'b':
+        wiringPiI2CWriteReg16(fd, CMD_BRAKE, 0x00);
+        break;
+    case 's':
+        wiringPiI2CWriteReg16(fd, CMD_STOP, 0x00);
+        break;
+    }
 
 }

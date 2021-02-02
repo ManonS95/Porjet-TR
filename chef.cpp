@@ -21,14 +21,6 @@ double angle_target = 0, min_dist = 0;
 double angle, offset, compteur;
 char stop;
 
-void viderBuffer()
-{
-    int c = 0;
-    while (c != '\n' && c != EOF)
-    {
-        c = getchar();
-    }
-}
 
 int kbhit()
 {
@@ -109,9 +101,8 @@ void* start_motor(void *arg)
         // Attendre que le moteur ait fini son tour
         if (angle < 20 && angle > 170)
         {
-            pthread_mutex_unlock(&m);
-            sleep(1);
             pthread_mutex_lock(&m);
+            pthread_cond_wait(&c, &m);
         }
         direction = !direction;
         min_dist = 0;
@@ -160,10 +151,9 @@ void* find_target(void* arg)
             
             printf("angle_target = %lf\n", angle_target);
             action(angle_target, servo);
-            
         }
     }
-    
+    return 0;
 }
 
 
@@ -173,7 +163,7 @@ void* encodeur(void *arg)
     char buf[20];
     double resolution = (double)90/47;//(double)360/420;
     double angle_prec;
-    clock_t start, now;
+    clock_t start;
     int msec = 0;
     
     printf("\nOpening Driver\n");
@@ -203,18 +193,16 @@ void* encodeur(void *arg)
         
         clock_t diff = clock() - start;
         msec = diff * 1000 / CLOCKS_PER_SEC;
-        //printf("msec = %d\n", msec);
+        
         if (angle_prec != angle)
         {
-            //printf("Start = now\n");
             start = clock(); // On réinitialise le timer
         }
-        if (msec > 10) // Si ça fait plus de 1 seconde que le moteur ne bouge plus
+        if (msec > 10) // Si ça fait plus de 10 millisecondes que le moteur ne bouge plus
         {
-            //printf("> 3\n");
             // Libère le mutex
+            pthread_cond_signal(&c);
             pthread_mutex_unlock(&m);
-            sleep(1);
         }
         angle_prec = angle;
         sem_post(&semaphore);
@@ -227,12 +215,6 @@ void* encodeur(void *arg)
 
 int main()
 {
-    double dist = 0;
-
-    // On lance le moteur CC
-    // On check les capteurs
-    // Si tour terminé -> lancement caméra
-
     pthread_t id[5];
     sem_init(&semaphore, 0, 0);
     pthread_mutex_lock(&m);
@@ -254,3 +236,4 @@ int main()
 
     return 0;
 }
+

@@ -3,7 +3,7 @@ LIBS:=-lpthread -lwiringPi -lm -I /usr/local/include -L /usr/local/lib -lopencv_
 FLAGS:=-Wall -pthread
 all: chef
 
-chef: chef.o servo.o flux_cam.o motor_cc.o detect_face.o
+chef: chef.o servo.o flux_cam.o motor_cc.o detect_face.o utile.o
 	$(GCC) $(FLAGS) $(LIBS) -o chef $^
 
 clear:

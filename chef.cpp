@@ -2,13 +2,9 @@
 #include "flux_cam.hpp"
 #include "motor_cc.hpp"
 #include "detect_face.hpp"
+#include "utile.hpp"
 #include <pthread.h>
 #include <semaphore.h>
-#include <iostream>
-#include <unistd.h>
-#include <termios.h>
-#include <stdio.h>
-#include <fcntl.h>
 
 
 static pthread_cond_t c = PTHREAD_COND_INITIALIZER;
@@ -22,44 +18,6 @@ double angle_target = 90, min_dist = 0;
 double angle, offset, compteur;
 char stop, choice;
 bool direction = true;
-
-
-int kbhit()
-{
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
-
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-    ch = getchar();
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-    if(ch != EOF)
-    {
-        ungetc(ch, stdin);
-        return 1;
-    }
-
-    return 0;
-}
-
-
-void viderBuffer()
-{
-    int c = 0;
-    while (c != '\n' && c != EOF)
-    {
-        c = getchar();
-    }
-}
 
 
 void* detect_stop(void* arg)
@@ -131,12 +89,14 @@ void* start_motor(void *arg)
     return 0;
 }
 
+
 void* detect_face(void *arg)
 {
     sem_post(&semaphore);
     go_detect(angle_target);
     return 0;
 }
+
 
 void* IR_listening(void *arg)
 {
@@ -161,7 +121,6 @@ void* IR_listening(void *arg)
     }
     return 0;
 }
-
 
 
 void* find_target(void* arg)

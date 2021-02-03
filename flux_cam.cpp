@@ -1,12 +1,7 @@
 #include "flux_cam.hpp"
 
-void movie()
+void movie(VideoCapture camera)
 {
-    VideoCapture camera;
-    // open the first webcam plugged in the computer
-    if (!camera.open(0)) {
-        std::cerr << "ERROR: Could not open camera" << std::endl;
-    }
     /*
     // create a window to display the images from the webcam
     namedWindow("Webcam", CV_WINDOW_AUTOSIZE);*/

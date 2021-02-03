@@ -40,16 +40,16 @@ __used __section(__versions) = {
 	{ 0x79f06713, "gpio_to_desc" },
 	{ 0x403f9529, "gpio_request_one" },
 	{ 0xe97c4103, "ioremap" },
+	{ 0x2cfde9a2, "warn_slowpath_fmt" },
 	{ 0xdecd0b29, "__stack_chk_fail" },
 	{ 0x51a910c0, "arm_copy_to_user" },
-	{ 0x2cfde9a2, "warn_slowpath_fmt" },
+	{ 0xc5850110, "printk" },
 	{ 0x3c3ff9fd, "sprintf" },
 	{ 0x8f678b07, "__stack_chk_guard" },
-	{ 0xc5850110, "printk" },
 	{ 0xb1ad28e0, "__gnu_mcount_nc" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "5308DF25ED037DC082F8B23");
+MODULE_INFO(srcversion, "1827EF22968F78DA926CA0D");

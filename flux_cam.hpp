@@ -5,6 +5,6 @@
 
 using namespace cv;
 
-void movie();
+void movie(VideoCapture camera);
 
 #endif

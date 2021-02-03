@@ -85,7 +85,7 @@ static ssize_t char_read(struct file *file, char *buf, size_t count, loff_t *ppo
   int err;
   char str[20];
   sprintf(str, "%ld", encoder_count);
-  printk("encodeur_count = %ld\n", encoder_count);
+  //printk("encodeur_count = %ld\n", encoder_count);
   if (count < 20) { return 0; }
   err = copy_to_user(buf, str, count);
   if(err != 0)
@@ -109,13 +109,13 @@ static irqreturn_t encoder_irq_handler( int irq, void* dev_id )
 	encoder_data* data = (encoder_data*) dev_id;
 
 	int pin_2 = GET_GPIO(IRQ_PIN_2);
-	printk("pin 2 = %d\n", pin_2);
+	
 	if (pin_2 > 0)
 		(*data->count)--;
 	else
 		(*data->count)++;
 
-	printk("irq_rcvd count = %ld \n", *data->count);
+	//printk("irq_rcvd count = %ld \n", *data->count);
 	return IRQ_HANDLED;
 }
 
@@ -182,9 +182,8 @@ int init_module( void )
     GPIO_PULLCLK0 = (1 << IRQ_PIN_1) | (1 << IRQ_PIN_2);	
 
 
-	int ret;
-	ret = register_chrdev(major, "encodeur", &char_fops);
-	if (ret<0){
+	int ret = register_chrdev(major, "encodeur", &char_fops);
+	if (ret < 0){
 		return ret;
 	}
 	major = ret;

@@ -16,6 +16,7 @@
 static pthread_cond_t c = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t m_stop = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t m_offset = PTHREAD_MUTEX_INITIALIZER;
 sem_t semaphore;
 double angle_target = 0, min_dist = 0;
 double angle, offset, compteur;
@@ -64,6 +65,7 @@ void* detect_stop(void* arg)
     return 0;
 }
 
+
 void* start_motor(void *arg)
 {
     char init;
@@ -78,8 +80,9 @@ void* start_motor(void *arg)
         
         if (init == 'o')
         {
-            sem_wait(&semaphore);
+            pthread_mutex_lock(&m_offset);
             offset = compteur;
+            pthread_mutex_unlock(&m_offset);
         }
     } while (init != 'o');
 
@@ -99,13 +102,14 @@ void* start_motor(void *arg)
             scan('l');
         
         // Attendre que le moteur ait fini son tour
-        if (angle < 20 && angle > 170)
-        {
-            pthread_mutex_lock(&m);
-            pthread_cond_wait(&c, &m);
-        }
+        pthread_mutex_lock(&m);
+        pthread_cond_wait(&c, &m);
+
         direction = !direction;
-        min_dist = 0;
+        if (min_dist == 0)
+			printf("Pas d'obstacle détecté ! \n");
+		min_dist = 0;
+        action(angle_target, SERVO2);
         sleep(3);
         
     } while(stop != 's');
@@ -138,7 +142,8 @@ void* IR_listening(void *arg)
 }
 
 
-void* find_target(void* arg)
+
+/*void* find_target(void* arg)
 {
     int servo = SERVO2;
     
@@ -154,7 +159,7 @@ void* find_target(void* arg)
         }
     }
     return 0;
-}
+}*/
 
 
 void* encodeur(void *arg)
@@ -178,7 +183,7 @@ void* encodeur(void *arg)
     sscanf(buf, "%lf", &compteur);
     offset = compteur;
     angle_prec = (compteur - offset) * resolution;
-    angle_prec = angle;
+    angle = angle_prec;
     start = clock();
     
     sem_post(&semaphore);
@@ -186,8 +191,10 @@ void* encodeur(void *arg)
     while(1) // Regarder si l'angle est inf. à 180°
     {
         read(fd, buf, 20);
+        pthread_mutex_lock(&m_offset);
         sscanf(buf, "%lf", &compteur);
         angle = (compteur - offset) * resolution;
+        pthread_mutex_unlock(&m_offset);
         //printf("angle = %lf\n compteur = %lf\n", angle, compteur);
         //printf("compteur - offset = %lf\n", compteur - offset);
         
@@ -198,14 +205,13 @@ void* encodeur(void *arg)
         {
             start = clock(); // On réinitialise le timer
         }
-        if (msec > 10) // Si ça fait plus de 10 millisecondes que le moteur ne bouge plus
+        if (msec > 10 || angle < 80 || angle > 100)// Si ça fait plus de 10 millisecondes que le moteur ne bouge plus
         {
             // Libère le mutex
             pthread_cond_signal(&c);
             pthread_mutex_unlock(&m);
         }
         angle_prec = angle;
-        sem_post(&semaphore);
     }
 
     close(fd);
@@ -219,21 +225,23 @@ int main()
     sem_init(&semaphore, 0, 0);
     pthread_mutex_lock(&m);
     pthread_mutex_lock(&m_stop);
+    scan('s');
     pthread_create(&id[0], NULL, IR_listening, NULL);
     pthread_create(&id[1], NULL, encodeur, NULL);
     pthread_create(&id[2], NULL, start_motor, NULL);
-    pthread_create(&id[3], NULL, find_target, NULL);
+    //pthread_create(&id[3], NULL, find_target, NULL);
     pthread_create(&id[4], NULL, detect_stop, NULL);
 
 
     pthread_join(id[0], NULL);
     pthread_join(id[1], NULL);
     pthread_join(id[2], NULL);
-    pthread_join(id[3], NULL);
+    //pthread_join(id[3], NULL);
     pthread_join(id[4], NULL);
     sem_destroy(&semaphore);
     
 
     return 0;
 }
+
 

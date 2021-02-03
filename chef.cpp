@@ -21,6 +21,7 @@ sem_t semaphore;
 double angle_target = 90, min_dist = 0;
 double angle, offset, compteur;
 char stop, choice;
+bool direction = true;
 
 
 int kbhit()
@@ -50,6 +51,17 @@ int kbhit()
     return 0;
 }
 
+
+void viderBuffer()
+{
+    int c = 0;
+    while (c != '\n' && c != EOF)
+    {
+        c = getchar();
+    }
+}
+
+
 void* detect_stop(void* arg)
 {
     pthread_mutex_lock(&m_stop);
@@ -66,12 +78,13 @@ void* detect_stop(void* arg)
 void* start_motor(void *arg)
 {
     char init;
-    bool direction = true;
+    
     for(int i = 0; i < 3; i++)
         sem_wait(&semaphore);
    
     do
     {
+        viderBuffer();
         printf("Orientez l'encodeur à sa position initiale. Are you ready? (o or n)\n");
         scanf("%c", &init);
        
@@ -90,28 +103,22 @@ void* start_motor(void *arg)
         // Lance la commande
         pthread_mutex_lock(&m_angle);
         if (direction == true)
-        {
             scan('r');
-            while(angle < 30) {printf("angle = %lf \n", angle);}
-        }
         else
-        {
             scan('l');
-            while(angle > -30) {printf("angle = %lf \n", angle);}
-        }
+        
         pthread_mutex_unlock(&m_angle);
+        pthread_cond_wait(&c, &m);
+        //printf("angle = %lf \n", angle);
        
-        scan('s');
+        scan('b');
         direction = !direction;
         pthread_mutex_lock(&m_target);
         if (min_dist == 0)
             printf("Pas d'obstacle détecté !\n");
         else if (choice == '2' && min_dist != 0)
-        {
             sleep(10);
-        }
-            
-        printf("angle target = %lf \n", angle_target);
+        
         action(angle_target, SERVO_BAS);
         min_dist = 0;
         pthread_mutex_unlock(&m_target);
@@ -198,10 +205,12 @@ void* encodeur(void *arg)
     while(1)
     {
         read(fd, buf, 20);
-        pthread_mutex_lock(&m_offset);
         sscanf(buf, "%lf", &compteur);
+        pthread_mutex_lock(&m_angle);
         angle = (compteur - offset) * resolution;
-        pthread_mutex_unlock(&m_offset);   
+        pthread_mutex_unlock(&m_angle);
+        if ((direction == true && angle > 30) || (direction != true && angle < -30))
+            pthread_cond_signal(&c);
     }
 
     close(fd);
@@ -233,7 +242,8 @@ int main()
     {
         pthread_join(id[i], NULL);
     }
-    sem_destroy(&semaphore);  
+    sem_destroy(&semaphore);
+    pthread_mutex_unlock(&m);
 
     return 0;
 }

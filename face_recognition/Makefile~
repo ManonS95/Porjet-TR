@@ -1,3 +1,0 @@
-all: face_reco
-
-face_reco: face_recognition.o

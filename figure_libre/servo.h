@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <wiringPi.h>
-#define SERVO 23 // pin 13 pwm
-#define SERVO_HAUT 0 //pin 16 pwm
+#define SERVO 0//23 // pin 13 pwm
+#define SERVO_HAUT 22//0 //pin 16 pwm
 //pour connaitre la pin utiliser la table de conversion BCM Wiring PI et mettre dans define le numero wiring pi
 
 
